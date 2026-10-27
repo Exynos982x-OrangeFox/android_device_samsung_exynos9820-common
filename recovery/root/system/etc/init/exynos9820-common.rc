@@ -4,6 +4,9 @@ on init
 on fs
     install_keyring
 
+    mkdir /dev/fox_flash 0755 root root
+    symlink /sys/class/camera/flash/rear_flash /dev/fox_flash/brightness
+
     symlink /vendor_rom/tee /vendor/tee
     mkdir /dev/socket/iwt 0770 system system
     mkdir /dev/socket/iwt/ca 0770 system system
