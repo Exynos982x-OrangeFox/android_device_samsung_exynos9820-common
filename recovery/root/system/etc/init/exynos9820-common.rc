@@ -1,8 +1,79 @@
 on init
     write /proc/sys/kernel/hung_task_timeout_secs 0
 
+on fs
+    install_keyring
+
+    symlink /vendor_rom/tee /vendor/tee
+    mkdir /dev/socket/iwt 0770 system system
+    mkdir /dev/socket/iwt/ca 0770 system system
+
 on fs && property:ro.boot.super_partition=*
     symlink /dev/block/by-name/${ro.boot.super_partition} /dev/block/by-name/super
 
 on boot
     start health-hal-2-1
+
+# Decryption runs the TEE and the keymaster/gatekeeper HALs of the installed ROM.
+# Nothing starts while TWRP has /vendor mounted, so that it can always unmount it,
+# nor in fastbootd mode, where /metadata is never mounted.
+on property:twrp.super.symlinks_created=true && property:dev.mnt.blk.metadata=* && property:dev.mnt.blk.vendor= && property:twrp.decrypt.done= && property:prepdecrypt.status=
+    start prepdecrypt
+
+on property:prepdecrypt.status=done && property:dev.mnt.blk.vendor= && property:twrp.decrypt.done=
+    start tz_service
+
+on property:vendor.tzdaemon=Ready && property:dev.mnt.blk.vendor= && property:twrp.decrypt.done=
+    setprop vendor.TEEGRIS.loaded true
+    write /proc/iccc_ready 1
+    start tzts_service
+
+on property:vendor.tzts_daemon=Ready && property:dev.mnt.blk.vendor= && property:twrp.decrypt.done=
+    start vendor.keymaster-4-0
+    start vendor.gatekeeper-1-0
+
+on property:twrp.decrypt.done=true
+    stop vendor.gatekeeper-1-0
+    stop vendor.keymaster-4-0
+    stop tzts_service
+    stop tz_service
+
+on property:twrp.decrypt.done=true && property:init.svc.tz_service=stopped && property:init.svc.tzts_service=stopped && property:init.svc.vendor.keymaster-4-0=stopped && property:init.svc.vendor.gatekeeper-1-0=stopped
+    umount /vendor_rom
+
+service prepdecrypt /system/bin/prepdecrypt.sh
+    user root
+    group root
+    disabled
+    oneshot
+    seclabel u:r:recovery:s0
+
+# TEEgris authenticates tzdaemon by its path, hence the copies in /vendor/bin
+service tz_service /vendor/bin/tzdaemon
+    user root
+    group root system readproc
+    setenv LD_LIBRARY_PATH /vendor_rom/lib64
+    disabled
+    seclabel u:r:recovery:s0
+
+service tzts_service /vendor/bin/tzts_daemon
+    user root
+    group root system
+    setenv LD_LIBRARY_PATH /vendor_rom/lib64
+    disabled
+    seclabel u:r:recovery:s0
+
+service vendor.keymaster-4-0 /vendor_rom/bin/hw/android.hardware.keymaster@4.0-service.samsung
+    user root
+    group root system drmrpc
+    setenv LD_LIBRARY_PATH /vendor_rom/lib64:/vendor_rom/lib64/hw
+    disabled
+    seclabel u:r:recovery:s0
+
+service vendor.gatekeeper-1-0 /vendor_rom/bin/hw/android.hardware.gatekeeper@1.0-service
+    interface android.hardware.gatekeeper@1.0::IGatekeeper default
+    user root
+    group root system
+    setenv LD_LIBRARY_PATH /vendor_rom/lib64:/vendor_rom/lib64/hw
+    disabled
+    seclabel u:r:recovery:s0
