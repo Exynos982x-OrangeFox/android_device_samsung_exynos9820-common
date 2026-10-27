@@ -82,6 +82,13 @@ TARGET_RECOVERY_PIXEL_FORMAT := ABGR_8888
 RECOVERY_SDCARD_ON_DATA := true
 BOARD_SUPPRESS_SECURE_ERASE := true
 
+# OrangeFox UPX-packs the ramdisk executables; a packed init needs execmem,
+# which its vendor_init subcontext lacks, so unpack init and keystore2 again.
+BOARD_RECOVERY_IMAGE_PREPARE += \
+    for f in init keystore2; do \
+        vendor/recovery/tools/upx -q -d $(TARGET_RECOVERY_ROOT_OUT)/system/bin/$$f >/dev/null 2>&1 || true; \
+    done;
+
 # TWRP
 TW_THEME := portrait_hdpi
 TW_BRIGHTNESS_PATH := "/sys/class/backlight/panel/brightness"
