@@ -1,0 +1,13 @@
+# mount point  fstype  device                                             device2              flags
+/boot          emmc    /dev/block/platform/13d60000.ufs/by-name/boot                           flags=backup=1;flashimg=1;display="Boot"
+/recovery      emmc    /dev/block/platform/13d60000.ufs/by-name/recovery                       flags=backup=1;flashimg=1;display="Recovery"
+/dtbo          emmc    /dev/block/platform/13d60000.ufs/by-name/dtbo                           flags=backup=1;flashimg=1;display="DTBO"
+/dtb           emmc    /dev/block/platform/13d60000.ufs/by-name/dtb                            flags=backup=1;flashimg=1;display="DTB"
+/vbmeta        emmc    /dev/block/platform/13d60000.ufs/by-name/vbmeta                         flags=backup=1;flashimg=1;display="VBMeta"
+/modem         emmc    /dev/block/platform/13d60000.ufs/by-name/radio                          flags=backup=1;display="Modem"
+/efs           ext4    /dev/block/platform/13d60000.ufs/by-name/efs                            flags=backup=1;display="EFS"
+/sec_efs       ext4    /dev/block/platform/13d60000.ufs/by-name/sec_efs                        flags=backup=1;display="Sec EFS"
+/keydata       ext4    /dev/block/platform/13d60000.ufs/by-name/keydata                        flags=backup=1;display="Keydata";wipeduringfactoryreset
+/keyrefuge     ext4    /dev/block/platform/13d60000.ufs/by-name/keyrefuge                      flags=backup=1;display="Keyrefuge";wipeduringfactoryreset
+/sdcard1       auto    /dev/block/mmcblk0p1                               /dev/block/mmcblk0   flags=display="MicroSD";storage;wipeingui;removable
+/usb_otg       auto    /dev/block/sdf1                                    /dev/block/sdf       flags=display="USB-Storage";storage;wipeingui;removable
