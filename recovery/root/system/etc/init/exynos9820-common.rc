@@ -3,3 +3,6 @@ on init
 
 on fs && property:ro.boot.super_partition=*
     symlink /dev/block/by-name/${ro.boot.super_partition} /dev/block/by-name/super
+
+on boot
+    start health-hal-2-1
