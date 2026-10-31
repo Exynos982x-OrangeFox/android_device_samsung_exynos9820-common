@@ -44,6 +44,22 @@ on property:twrp.decrypt.done=true
 on property:twrp.decrypt.done=true && property:init.svc.tz_service=stopped && property:init.svc.tzts_service=stopped && property:init.svc.vendor.keymaster-4-0=stopped && property:init.svc.vendor.gatekeeper-1-0=stopped
     umount /vendor_rom
 
+# tzdaemon runs as root here and the recovery policy has no tee_efs_file, so
+# the TEE objects it rewrites in /efs/tee (e.g. the gatekeeper's) end up
+# root-owned and unlabeled: the ROM's tzdaemon (system) cannot update them and
+# every lockscreen PIN is then rejected. Hand them back to the ROM once
+# tzdaemon is gone: after decryption, and on reboot for any other case
+# (wrong PIN, decryption skipped).
+on property:init.svc.tz_service=stopped
+    exec u:r:recovery:s0 root root -- /system/bin/sh -c "[ -d /efs/tee ] && chown -R system:system /efs/tee && chcon -R u:object_r:tee_efs_file:s0 /efs/tee"
+
+on shutdown
+    stop vendor.gatekeeper-1-0
+    stop vendor.keymaster-4-0
+    stop tzts_service
+    stop tz_service
+    exec u:r:recovery:s0 root root -- /system/bin/sh -c "[ -d /efs/tee ] && chown -R system:system /efs/tee && chcon -R u:object_r:tee_efs_file:s0 /efs/tee"
+
 service prepdecrypt /system/bin/prepdecrypt.sh
     user root
     group root
